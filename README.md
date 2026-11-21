@@ -12,7 +12,7 @@ Reading is public by design, so anyone can browse recipes and logs with no accou
 
 ## For reviewers
 
-1. **Tokens:** `setup.sh` exports a `CONTRIBUTOR_TOKEN` and an `OWNER_TOKEN`. Auth0 tokens expire after 24 hours; if they have, the same tokens are in the submission notes, or you can get new ones with the [login URL](#authentication-and-roles) below.
+1. **Tokens:** `setup.sh` exports a `CONTRIBUTOR_TOKEN` and an `OWNER_TOKEN`. Auth0 tokens expire after 24 hours; if they have, fresh tokens are in the submission notes, or you can get new ones with the [login URL](#authentication-and-roles) below.
 2. **Try the live API:**
 
    ```bash
@@ -50,9 +50,11 @@ Dialing in an AeroPress recipe means changing one variable at a time (grind, tem
 ## Tech stack
 
 - Python 3.12, Flask, Flask-SQLAlchemy, Flask-Migrate, Flask-CORS
-- PostgreSQL
-- Auth0 (JWT, role-based access control)
-- Hosted on Render
+- PostgreSQL (psycopg2)
+- Auth0 (JWT, role-based access control), verified with python-jose
+- Hosted on Render, served by gunicorn
+
+All dependencies are pinned in `requirements.txt`.
 
 ## Project structure
 
@@ -129,7 +131,6 @@ Deleting a recipe deletes its logs. Recipes based on a deleted recipe are kept, 
    | `ALGORITHMS` | `RS256`. Tokens are signed with Auth0's private key and verified with its public keys (JWKS), so there is no shared signing secret to configure |
    | `CONTRIBUTOR_TOKEN`, `OWNER_TOKEN` | JWTs for each role, used by the tests and by reviewers |
 
-
    ```bash
    source setup.sh
    ```
@@ -200,6 +201,14 @@ All responses are JSON with a `success` flag.
 | 405 | Method not allowed |
 | 422 | Validation failed (message explains which field) |
 | 500 | Server error |
+
+### GET /
+
+Public. Health check.
+
+```json
+{ "success": true, "message": "AeroPress Brews API. See the README for endpoints." }
+```
 
 ### GET /recipes
 
