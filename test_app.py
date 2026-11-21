@@ -33,7 +33,8 @@ class AeropressBrewsTestCase(unittest.TestCase):
         if not (self.database_path and all(self.tokens.values())):
             raise RuntimeError(
                 'TEST_DATABASE_URL, CONTRIBUTOR_TOKEN and OWNER_TOKEN must '
-                'be set. Run `source setup.sh` first.')
+                'be set. Put the tokens in setup.local.sh, then run '
+                '`source setup.sh`.')
 
         self.app = create_app({
             'SQLALCHEMY_DATABASE_URI': self.database_path,

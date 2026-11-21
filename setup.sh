@@ -1,11 +1,14 @@
 #!/bin/bash
 # Usage: source setup.sh
-# Copy to setup.local.sh (git-ignored) and fill in real values if you don't
-# want tokens committed. Udacity reviewers need working tokens here.
+#
+# Non-secret configuration for local development and tests. Secrets (role
+# tokens, or a non-default database password) go in setup.local.sh, which is
+# git-ignored and loaded at the end of this file. Production settings live in
+# the hosting platform (see render.yaml).
 
 export FLASK_APP=api
 
-# Database
+# Database (local defaults; override in setup.local.sh)
 export DATABASE_URL='postgresql://postgres:postgres@localhost:5432/aeropress'
 export TEST_DATABASE_URL='postgresql://postgres:postgres@localhost:5432/aeropress_test'
 
@@ -18,6 +21,15 @@ export API_AUDIENCE='aeropress-brews'
 # https://$AUTH0_DOMAIN/.well-known/jwks.json
 export ALGORITHMS='RS256'
 
-# Role tokens for tests / reviewers (these expire; refresh before submitting)
-export CONTRIBUTOR_TOKEN='eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjNtUU1zN0VuVDZCY3A5UEpfalQyRSJ9.eyJpc3MiOiJodHRwczovL2Rldi1jaG10N3B4N2NuMGpvaHRjLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHw2YWZmZDAzNGU3YTcwNzJmODNiMjdiZTciLCJhdWQiOiJhZXJvcHJlc3MtYnJld3MiLCJpYXQiOjE3OTUyODAxNTMsImV4cCI6MTc5NTM2NjU1Mywic2NvcGUiOiIiLCJhenAiOiJnN2lTT1Y1M1pJWUkyVW9wbjZ1bEFBcThYa2lvTTAwWSIsInBlcm1pc3Npb25zIjpbInBhdGNoOmxvZ3MiLCJwYXRjaDpyZWNpcGVzIiwicG9zdDpsb2dzIiwicG9zdDpyZWNpcGVzIl19.OfJUk9XZHUi7IygHopINBu4bc3HiWhOGkWEZKxePRs9ifhqrHhtE7_-d6s2bF0FhCJel32wQ1yDLbcOFPghVm-m7VoeYncILS9gDr4en0W2mRRaaRF25isop-s9YmaaWVUTQB3fsL6YbgDKpnHaQFBQRF2Zh67-iCquPVfttGNPtrNf12FVGROVL-E3PErnOQO7dtObrXjxbAw1Fuj-Gb0AzHMhoLw4sKNx5zlSWD7C8xxUNpBrTw1JD_MQL9XzH-SYj76n08-alkuq3N9s2pS7EjwJQm0B1otk7ND_3uCKDjZijmFp5grFb72JVVmfxXXfQ_OWu7hgKZIZhWL-4pw'
-export OWNER_TOKEN='eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjNtUU1zN0VuVDZCY3A5UEpfalQyRSJ9.eyJpc3MiOiJodHRwczovL2Rldi1jaG10N3B4N2NuMGpvaHRjLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHw2YWZmZDA0YzM0YjE4NDUwYWRhZjE1Y2QiLCJhdWQiOiJhZXJvcHJlc3MtYnJld3MiLCJpYXQiOjE3OTUyODAyMTksImV4cCI6MTc5NTM2NjYxOSwic2NvcGUiOiIiLCJhenAiOiJnN2lTT1Y1M1pJWUkyVW9wbjZ1bEFBcThYa2lvTTAwWSIsInBlcm1pc3Npb25zIjpbImRlbGV0ZTpsb2dzIiwiZGVsZXRlOnJlY2lwZXMiLCJwYXRjaDpsb2dzIiwicGF0Y2g6cmVjaXBlcyIsInBvc3Q6bG9ncyIsInBvc3Q6cmVjaXBlcyJdfQ.eCHasIgeq1GAPkPOTUdYgf7rOjnbkbxpyT_uxY2tC3IzjKjfz_0G8QdWAzWYJ9BMGheWYZC3tKSXLNo7tQ04sqNMOTRsBZsNhEnW2F1gaLQ_WXVsSmD-QyDxxdMU07xUstmxEVWQPTIEN4KPf7L4V7akMOcTcYzsdS5Y0BarHDJ5dZQVpu3s4E96tPUJGGFwvXitMudgZyHAYyBvmkv8SpgF4srmTj1tpYNfz-BLFjZ7rplYezWrBULxOA96ENL5EpfL8to4oi3IpmcsJvalAY7lffoVjSaVMPvCzWwizsMZG8cpFGKrNL9b5NpSxkD4UgUU_kNlxIvmKvvVxx36EA'
+# Role tokens for the tests. Set real values in setup.local.sh:
+#   export CONTRIBUTOR_TOKEN='...'
+#   export OWNER_TOKEN='...'
+export CONTRIBUTOR_TOKEN=''
+export OWNER_TOKEN=''
+
+# Load local secrets, if present
+SETUP_LOCAL="$(dirname "${BASH_SOURCE[0]}")/setup.local.sh"
+if [ -f "$SETUP_LOCAL" ]; then
+    source "$SETUP_LOCAL"
+fi
+unset SETUP_LOCAL

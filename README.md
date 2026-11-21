@@ -10,10 +10,18 @@ Reading is public by design, so anyone can browse recipes and logs with no accou
 
 > Hosted on Render's free tier: the server sleeps when idle, so the first request may take up to a minute while it wakes up.
 
-## For reviewers
+## Try the live API
 
-1. **Tokens:** `setup.sh` exports a `CONTRIBUTOR_TOKEN` and an `OWNER_TOKEN`. Auth0 tokens expire after 24 hours; if they have, fresh tokens are in the submission notes, or you can get new ones with the [login URL](#authentication-and-roles) below.
-2. **Try the live API:**
+1. **Browse:** reading needs no account. Try https://aeropress-brews.onrender.com/recipes.
+2. **Get tokens:** writing needs an Auth0 token for a Contributor or Owner account. Accounts are created by the project owner; there's no public sign-up. With an account, get one token per role from the [login URL](#authentication-and-roles) below, then put them in `setup.local.sh`, which is git-ignored and loaded by `setup.sh`:
+
+   ```bash
+   export CONTRIBUTOR_TOKEN='...'
+   export OWNER_TOKEN='...'
+   ```
+
+   Tokens expire after 24 hours.
+3. **Make requests:**
 
    ```bash
    source setup.sh
@@ -26,7 +34,7 @@ Reading is public by design, so anyone can browse recipes and logs with no accou
    curl -X POST $URL/recipes \
      -H "Authorization: Bearer $CONTRIBUTOR_TOKEN" \
      -H "Content-Type: application/json" \
-     -d '{"beans": "Reviewer test", "coffee_grams": 15, "water_grams": 250,
+     -d '{"beans": "Test recipe", "coffee_grams": 15, "water_grams": 250,
           "water_temp": 200, "grind_setting": 20, "brew_time": 150,
           "drink_type": "hot"}'
 
@@ -41,7 +49,7 @@ Reading is public by design, so anyone can browse recipes and logs with no accou
    ```
 
    Replace `1` with the `id` returned by the POST.
-3. **Run the test suite locally:** see [Local setup](#local-setup) and [Running tests](#running-tests).
+4. **Run the test suite locally:** see [Local setup](#local-setup) and [Running tests](#running-tests).
 
 ## Motivation
 
@@ -69,7 +77,8 @@ All dependencies are pinned in `requirements.txt`.
 ├── models.py                  # Recipe and Log models, setup_db()
 ├── migrations/                # Flask-Migrate (Alembic) migrations
 ├── test_app.py                # unittest suite
-├── setup.sh                   # environment variables
+├── setup.sh                   # non-secret environment variables
+├── setup.local.sh             # your secrets (git-ignored, you create it)
 └── render.yaml                # Render deployment blueprint
 ```
 
@@ -120,7 +129,15 @@ Deleting a recipe deletes its logs. Recipes based on a deleted recipe are kept, 
    createdb aeropress_test
    ```
 
-3. Edit `setup.sh` with your database URLs, Auth0 settings and role tokens, then load it. It exports:
+3. Configure the environment. `setup.sh` holds the non-secret settings and is committed. Secrets go in `setup.local.sh` (git-ignored), which `setup.sh` loads automatically. At minimum that's the two role tokens; add `DATABASE_URL` and `TEST_DATABASE_URL` there too if your Postgres password isn't the default:
+
+   ```bash
+   # setup.local.sh
+   export CONTRIBUTOR_TOKEN='...'
+   export OWNER_TOKEN='...'
+   ```
+
+   Together they export:
 
    | Variable | Purpose |
    |---|---|
@@ -129,11 +146,15 @@ Deleting a recipe deletes its logs. Recipes based on a deleted recipe are kept, 
    | `AUTH0_CLIENT_ID` | Auth0 application used to log in and get tokens |
    | `API_AUDIENCE` | Auth0 API identifier |
    | `ALGORITHMS` | `RS256`. Tokens are signed with Auth0's private key and verified with its public keys (JWKS), so there is no shared signing secret to configure |
-   | `CONTRIBUTOR_TOKEN`, `OWNER_TOKEN` | JWTs for each role, used by the tests and by reviewers |
+   | `CONTRIBUTOR_TOKEN`, `OWNER_TOKEN` | JWTs for each role, used by the tests (set in `setup.local.sh`) |
+
+   Then load them:
 
    ```bash
    source setup.sh
    ```
+
+   The deployed app doesn't use these files: its settings live in Render (see [Deployment](#deployment-render)).
 
 4. Run migrations and start the server:
 
@@ -175,11 +196,29 @@ To set up your own Auth0 tenant instead, use the steps above and change `AUTH0_D
 
 ## Running tests
 
-Tests use the `TEST_DATABASE_URL` database (tables are created and dropped for each test) and the `CONTRIBUTOR_TOKEN` and `OWNER_TOKEN` from `setup.sh`.
+Tests use the `TEST_DATABASE_URL` database (tables are created and dropped for each test) and the `CONTRIBUTOR_TOKEN` and `OWNER_TOKEN` from `setup.local.sh`. Tokens are verified against Auth0, so the role tests exercise the real RBAC configuration.
 
 ```bash
 source setup.sh
 python -m unittest test_app -v
+```
+
+Excerpt from a passing run (38 tests; full output lists each one):
+
+```
+test_create_recipe_as_contributor (test_app.AeropressBrewsTestCase.test_create_recipe_as_contributor) ... ok
+test_create_recipe_without_token (test_app.AeropressBrewsTestCase.test_create_recipe_without_token) ... ok
+test_delete_log_as_contributor_forbidden (test_app.AeropressBrewsTestCase.test_delete_log_as_contributor_forbidden) ... ok
+test_delete_log_as_owner (test_app.AeropressBrewsTestCase.test_delete_log_as_owner) ... ok
+test_delete_recipe_as_contributor_forbidden (test_app.AeropressBrewsTestCase.test_delete_recipe_as_contributor_forbidden) ... ok
+test_delete_recipe_as_owner_cascades_logs (test_app.AeropressBrewsTestCase.test_delete_recipe_as_owner_cascades_logs) ... ok
+test_get_recipes_public (test_app.AeropressBrewsTestCase.test_get_recipes_public) ... ok
+test_update_recipe_cycle_rejected (test_app.AeropressBrewsTestCase.test_update_recipe_cycle_rejected) ... ok
+...
+----------------------------------------------------------------------
+Ran 38 tests in 3.451s
+
+OK
 ```
 
 ## API reference
