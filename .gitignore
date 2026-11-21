@@ -1,0 +1,9 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+setup.local.sh
+*.db
+.pytest_cache/
+.vscode/
