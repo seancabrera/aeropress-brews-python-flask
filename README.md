@@ -4,9 +4,44 @@ A REST API for dialing in AeroPress recipes. Each **recipe** is a fixed set of b
 
 Capstone project for the Udacity Full Stack Web Developer Nanodegree.
 
-**Live API:** `https://YOUR-APP.onrender.com` _(update after deploying)_
+**Live API:** https://aeropress-brews.onrender.com
 
 Reading is public by design, so anyone can browse recipes and logs with no account. Creating, editing and deleting require an Auth0 account with the right role.
+
+> Hosted on Render's free tier: the server sleeps when idle, so the first request may take up to a minute while it wakes up.
+
+## For reviewers
+
+1. **Tokens:** `setup.sh` exports a `CONTRIBUTOR_TOKEN` and an `OWNER_TOKEN`. Auth0 tokens expire after 24 hours; if they have, the same tokens are in the submission notes, or you can get new ones with the [login URL](#authentication-and-roles) below.
+2. **Try the live API:**
+
+   ```bash
+   source setup.sh
+   URL=https://aeropress-brews.onrender.com
+
+   # Public: no token needed
+   curl $URL/recipes
+
+   # Contributor can create (201)...
+   curl -X POST $URL/recipes \
+     -H "Authorization: Bearer $CONTRIBUTOR_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"beans": "Reviewer test", "coffee_grams": 15, "water_grams": 250,
+          "water_temp": 200, "grind_setting": 20, "brew_time": 150,
+          "drink_type": "hot"}'
+
+   # ...but not delete (403)
+   curl -X DELETE $URL/recipes/1 -H "Authorization: Bearer $CONTRIBUTOR_TOKEN"
+
+   # Owner can delete (200)
+   curl -X DELETE $URL/recipes/1 -H "Authorization: Bearer $OWNER_TOKEN"
+
+   # No token on a protected endpoint (401)
+   curl -X DELETE $URL/recipes/1
+   ```
+
+   Replace `1` with the `id` returned by the POST.
+3. **Run the test suite locally:** see [Local setup](#local-setup) and [Running tests](#running-tests).
 
 ## Motivation
 
@@ -123,13 +158,19 @@ Auth0 setup:
 | `delete:recipes` | | ✅ |
 | `delete:logs` | | ✅ |
 
+- **Contributor:** can add and edit recipes and logs, but can't delete anything.
+- **Owner:** full access, including deleting recipes and logs.
+- **Public (no account):** read-only access to all GET endpoints.
+
 GET endpoints need no token. Protected endpoints expect an `Authorization: Bearer <token>` header and return **401** if the token is missing or invalid, or **403** if it lacks the permission.
 
-To get a token, log in through Auth0's authorize URL and copy `access_token` from the redirect:
+To get a token, open this login URL, log in as a user with the role you need, and copy the `access_token` value from the address bar after the redirect (the `localhost` page itself doesn't need to load):
 
 ```
-https://YOUR_TENANT.us.auth0.com/authorize?audience=aeropress-brews&response_type=token&client_id=YOUR_CLIENT_ID&redirect_uri=http://localhost:5000/
+https://dev-chmt7px7cn0johtc.us.auth0.com/authorize?audience=aeropress-brews&response_type=token&client_id=g7iSOV53ZIYI2Uopn6ulAAq8XkioM00Y&redirect_uri=http://localhost:5000/&prompt=login
 ```
+
+To set up your own Auth0 tenant instead, use the steps above and change `AUTH0_DOMAIN` and `AUTH0_CLIENT_ID` in `setup.sh`.
 
 ## Running tests
 
@@ -165,7 +206,7 @@ All responses are JSON with a `success` flag.
 Public. Optional query parameter `drink_type` (`hot`, `iced`, `espresso`).
 
 ```bash
-curl https://YOUR-APP.onrender.com/recipes?drink_type=hot
+curl https://aeropress-brews.onrender.com/recipes?drink_type=hot
 ```
 
 ```json
@@ -221,7 +262,7 @@ Public. Logs for a recipe, newest first.
 Requires `post:recipes`. All required fields must be sent. Returns **201**.
 
 ```bash
-curl -X POST https://YOUR-APP.onrender.com/recipes \
+curl -X POST https://aeropress-brews.onrender.com/recipes \
   -H "Authorization: Bearer $CONTRIBUTOR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"beans": "Onyx Southern Weather", "coffee_grams": 15, "water_grams": 250,
@@ -238,7 +279,7 @@ curl -X POST https://YOUR-APP.onrender.com/recipes \
 Requires `patch:recipes`. Send only the fields to change.
 
 ```bash
-curl -X PATCH https://YOUR-APP.onrender.com/recipes/2 \
+curl -X PATCH https://aeropress-brews.onrender.com/recipes/2 \
   -H "Authorization: Bearer $CONTRIBUTOR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"instructions": "Inverted. Stir 15s."}'
@@ -261,7 +302,7 @@ Requires `delete:recipes`. Also deletes the recipe's logs.
 Requires `post:logs`. `rating` is required; `notes` and `brewed_at` are optional. Returns **201**.
 
 ```bash
-curl -X POST https://YOUR-APP.onrender.com/recipes/1/logs \
+curl -X POST https://aeropress-brews.onrender.com/recipes/1/logs \
   -H "Authorization: Bearer $CONTRIBUTOR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"rating": 5, "notes": "Juicy, clean finish"}'
