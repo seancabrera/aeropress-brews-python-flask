@@ -293,6 +293,6 @@ Requires `delete:logs`.
 
 1. Push the repo to GitHub.
 2. In Render, choose **New → Blueprint** and select the repo.
-3. Set `AUTH0_DOMAIN` and `API_AUDIENCE` when prompted.
+3. Render creates the web service and database. The Auth0 settings and Python version are already in `render.yaml`.
 
 Migrations run during each build (`flask db upgrade`), and the app is served with `gunicorn "api:create_app()"`.
